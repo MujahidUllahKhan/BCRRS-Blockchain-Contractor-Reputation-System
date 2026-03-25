@@ -66,7 +66,7 @@ Layer 4: Blockchain Ledger (Hyperledger Besu / Ethereum)
 ### Installation
 
 ```bash
-git clone https://github.com/[yourusername]/BCRRS.git
+git clone https://github.com/[yourusername]/BCRRS.git](https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System
 cd BCRRS
 npm install
 ```
@@ -206,7 +206,7 @@ If you use this code in your research, please cite:
   author  = {Afridi, Mujahid Ullah Khan},
   journal = {[Journal name]},
   year    = {2025},
-  note    = {Code: https://github.com/[yourusername]/BCRRS}
+  note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
 }
 ```
 
