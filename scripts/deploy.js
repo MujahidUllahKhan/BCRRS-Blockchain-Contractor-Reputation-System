@@ -1,15 +1,19 @@
 /**
  * BCRRS Deployment Script
  * =======================
- * Deploys all three BCRRS smart contracts in the correct order:
+ * Deploys all four BCRRS smart contracts in dependency order:
  *   1. ContractorRegistry  (no dependencies)
- *   2. ReputationLedger    (depends on: authority, milestone address — placeholder first)
+ *   2. ReputationLedger    (depends on: authority, milestone placeholder)
  *   3. ProjectMilestone    (depends on: registry, ledger)
- *   4. Wire up: update ReputationLedger with real milestone contract address
+ *   4. DisputeRegistry     (depends on: authority, ledger)
+ *   5. Wire up: update ReputationLedger with real milestone address
  *
  * Usage:
  *   npx hardhat run scripts/deploy.js --network hardhat
- *   npx hardhat run scripts/deploy.js --network sepolia
+ *   npx hardhat run scripts/deploy.js --network besu
+ *
+ * After deployment run gas report:
+ *   npm run gas
  */
 
 const { ethers } = require("hardhat");
@@ -18,7 +22,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log("=".repeat(60));
-  console.log("  BCRRS — Deployment Script");
+  console.log("  BCRRS Deployment (v2 — four contracts)");
   console.log("=".repeat(60));
   console.log(`  Deployer : ${deployer.address}`);
   console.log(
@@ -26,66 +30,64 @@ async function main() {
       await ethers.provider.getBalance(deployer.address)
     )} ETH`
   );
-  console.log("=".repeat(60));
 
-  // ── Step 1: Deploy ContractorRegistry ────────────────────────
-  console.log("\n[1/4] Deploying ContractorRegistry...");
-  const ContractorRegistry = await ethers.getContractFactory(
-    "ContractorRegistry"
-  );
-  const registry = await ContractorRegistry.deploy(deployer.address);
+  // 1. ContractorRegistry
+  console.log("\n[1/5] Deploying ContractorRegistry...");
+  const registry = await (
+    await ethers.getContractFactory("ContractorRegistry")
+  ).deploy(deployer.address);
   await registry.waitForDeployment();
   const registryAddress = await registry.getAddress();
-  console.log(`      ContractorRegistry deployed: ${registryAddress}`);
+  console.log(`      ContractorRegistry : ${registryAddress}`);
 
-  // ── Step 2: Deploy ReputationLedger (placeholder milestone addr) ─
-  console.log("\n[2/4] Deploying ReputationLedger...");
-  const ReputationLedger = await ethers.getContractFactory("ReputationLedger");
-  // Use deployer as placeholder milestone address — will be updated in step 4
-  const ledger = await ReputationLedger.deploy(
-    deployer.address,
-    deployer.address // placeholder
-  );
+  // 2. ReputationLedger (placeholder milestone)
+  console.log("\n[2/5] Deploying ReputationLedger...");
+  const ledger = await (
+    await ethers.getContractFactory("ReputationLedger")
+  ).deploy(deployer.address, deployer.address);
   await ledger.waitForDeployment();
   const ledgerAddress = await ledger.getAddress();
-  console.log(`      ReputationLedger deployed:   ${ledgerAddress}`);
+  console.log(`      ReputationLedger   : ${ledgerAddress}`);
 
-  // ── Step 3: Deploy ProjectMilestone ──────────────────────────
-  console.log("\n[3/4] Deploying ProjectMilestone...");
-  const ProjectMilestone = await ethers.getContractFactory("ProjectMilestone");
-  const milestone = await ProjectMilestone.deploy(
-    deployer.address,
-    registryAddress,
-    ledgerAddress
-  );
+  // 3. ProjectMilestone
+  console.log("\n[3/5] Deploying ProjectMilestone...");
+  const milestone = await (
+    await ethers.getContractFactory("ProjectMilestone")
+  ).deploy(deployer.address, registryAddress, ledgerAddress);
   await milestone.waitForDeployment();
   const milestoneAddress = await milestone.getAddress();
-  console.log(`      ProjectMilestone deployed:   ${milestoneAddress}`);
+  console.log(`      ProjectMilestone   : ${milestoneAddress}`);
 
-  // ── Step 4: Wire up ReputationLedger with real milestone address ─
-  console.log("\n[4/4] Wiring contracts...");
+  // 4. DisputeRegistry — NEW
+  console.log("\n[4/5] Deploying DisputeRegistry...");
+  const disputeReg = await (
+    await ethers.getContractFactory("DisputeRegistry")
+  ).deploy(deployer.address, ledgerAddress);
+  await disputeReg.waitForDeployment();
+  const disputeAddress = await disputeReg.getAddress();
+  console.log(`      DisputeRegistry    : ${disputeAddress}`);
+
+  // 5. Wire up milestone address
+  console.log("\n[5/5] Wiring ReputationLedger → ProjectMilestone...");
   const tx = await ledger.setMilestoneContract(milestoneAddress);
   await tx.wait();
-  console.log(`      ReputationLedger.milestoneContract set to: ${milestoneAddress}`);
+  console.log(`      milestoneContract  : ${milestoneAddress}`);
 
-  // ── Summary ──────────────────────────────────────────────────
+  // Summary
   console.log("\n" + "=".repeat(60));
   console.log("  Deployment Complete");
   console.log("=".repeat(60));
   console.log(`  ContractorRegistry : ${registryAddress}`);
   console.log(`  ReputationLedger   : ${ledgerAddress}`);
   console.log(`  ProjectMilestone   : ${milestoneAddress}`);
+  console.log(`  DisputeRegistry    : ${disputeAddress}`);
   console.log(`  Authority          : ${deployer.address}`);
   console.log("=".repeat(60));
-  console.log("\n  Add these to your .env or update the paper's Table III.\n");
+  console.log("\n  Copy these to your .env then run: npm run gas\n");
 
-  // Return addresses for use in tests
-  return { registry, ledger, milestone };
+  return { registry, ledger, milestone, disputeReg };
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+  .catch((err) => { console.error(err); process.exit(1); });
