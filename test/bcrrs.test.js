@@ -606,7 +606,7 @@ describe("BCRRS — DisputeRegistry", function () {
           ethers.keccak256(ethers.toUtf8Bytes("Overflow dispute"))
         )
       ).to.be.revertedWith(
-        "BCRRS: too many active disputes — resolve existing ones first"
+        "BCRRS: too many active disputes - resolve existing ones first"
       );
     });
   });
