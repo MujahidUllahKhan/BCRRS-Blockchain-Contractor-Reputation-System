@@ -45,7 +45,7 @@ Node.js 18+
 npm 9+
 Installation
 ```bash
-git clone https://github.com/[yourusername]/BCRRS.git
+git clone hhttps://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System
 cd BCRRS
 npm install
 ```
