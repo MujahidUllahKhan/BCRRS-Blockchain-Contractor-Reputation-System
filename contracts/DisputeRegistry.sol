@@ -296,7 +296,7 @@ contract DisputeRegistry {
         }
         require(
             activeCount < MAX_ACTIVE_DISPUTES,
-            "BCRRS: too many active disputes — resolve existing ones first"
+            "BCRRS: too many active disputes - resolve existing ones first"
         );
 
         bytes32 disputeId = keccak256(
