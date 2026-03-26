@@ -1,4 +1,5 @@
-require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
 require("hardhat-gas-reporter");
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -14,30 +15,15 @@ module.exports = {
   },
 
   networks: {
-    // Local Hardhat network (default)
     hardhat: {
       chainId: 31337,
     },
-
-    // Sepolia testnet — add your own RPC URL and private key
-    // in a .env file (never commit private keys to GitHub)
-    sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    },
   },
 
-  // Gas reporter — generates Table III in the paper
   gasReporter: {
-    enabled: true,
+    enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
-    coinmarketcap: process.env.CMC_API_KEY || "",
     outputFile: "gas-report.txt",
     noColors: true,
-  },
-
-  // Etherscan verification (optional)
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
 };
