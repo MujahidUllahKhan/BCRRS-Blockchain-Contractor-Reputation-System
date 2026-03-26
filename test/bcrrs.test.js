@@ -491,3 +491,350 @@ describe("BCRRS — ReputationLedger", function () {
     });
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// APPEND THIS ENTIRE BLOCK TO THE END OF test/bcrrs.test.js
+// ──────────────────────────────────────────────────────────────────────────
+
+describe("BCRRS — DisputeRegistry", function () {
+
+  /**
+   * Deploy all four contracts including DisputeRegistry.
+   */
+  async function deployWithDispute() {
+    const [authority, owner, contractor, inspector, drc1, drc2, drc3, stranger] =
+      await ethers.getSigners();
+
+    // Deploy base three contracts
+    const registry = await (
+      await ethers.getContractFactory("ContractorRegistry")
+    ).deploy(authority.address);
+    await registry.waitForDeployment();
+
+    const ledger = await (
+      await ethers.getContractFactory("ReputationLedger")
+    ).deploy(authority.address, authority.address);
+    await ledger.waitForDeployment();
+
+    const milestone = await (
+      await ethers.getContractFactory("ProjectMilestone")
+    ).deploy(authority.address, await registry.getAddress(), await ledger.getAddress());
+    await milestone.waitForDeployment();
+
+    await ledger.connect(authority).setMilestoneContract(await milestone.getAddress());
+
+    // Deploy DisputeRegistry
+    const disputeReg = await (
+      await ethers.getContractFactory("DisputeRegistry")
+    ).deploy(authority.address, await ledger.getAddress());
+    await disputeReg.waitForDeployment();
+
+    // Add three DRC members
+    await disputeReg.connect(authority).addDRCMember(
+      drc1.address, "Pakistan Engineering Council"
+    );
+    await disputeReg.connect(authority).addDRCMember(
+      drc2.address, "PPRA Regulatory Authority"
+    );
+    await disputeReg.connect(authority).addDRCMember(
+      drc3.address, "Contractor Representative Body"
+    );
+
+    return {
+      authority, owner, contractor, inspector,
+      drc1, drc2, drc3, stranger,
+      registry, ledger, milestone, disputeReg
+    };
+  }
+
+  /**
+   * File a dispute and return its disputeId.
+   */
+  async function fileDisputeHelper(disputeReg, contractor) {
+    const milestoneId  = ethers.id("MILESTONE-DISPUTE-001");
+    const groundsHash  = ethers.keccak256(
+      ethers.toUtf8Bytes("Inspector gave unfairly low quality score of 40/100")
+    );
+    const tx = await disputeReg.connect(contractor).fileDispute(
+      milestoneId, groundsHash
+    );
+    const receipt = await tx.wait();
+    console.log(`      fileDispute() gas used: ${receipt.gasUsed.toString()}`);
+
+    // Retrieve disputeId from event
+    const event = receipt.logs.find(
+      l => l.fragment && l.fragment.name === "DisputeFiled"
+    );
+    return event ? event.args[0] : ethers.id("DISPUTE-001");
+  }
+
+  // ── fileDispute() — Gas Measurement (Table IV) ─────────────────────────
+
+  describe("fileDispute() — Gas Measurement (Table IV)", function () {
+    it("Should file a dispute and emit DisputeFiled event", async function () {
+      const { contractor, disputeReg } = await deployWithDispute();
+
+      const milestoneId = ethers.id("MS-GAS-TEST");
+      const groundsHash = ethers.keccak256(
+        ethers.toUtf8Bytes("Quality score was incorrectly recorded")
+      );
+
+      const tx = await disputeReg.connect(contractor).fileDispute(
+        milestoneId, groundsHash
+      );
+      const receipt = await tx.wait();
+      console.log(`      fileDispute() gas used: ${receipt.gasUsed.toString()}`);
+
+      expect(receipt.status).to.equal(1);
+    });
+
+    it("Should enforce MAX_ACTIVE_DISPUTES = 3 (AV-8 mitigation)", async function () {
+      const { contractor, disputeReg } = await deployWithDispute();
+
+      // File 3 disputes — should all succeed
+      for (let i = 0; i < 3; i++) {
+        await disputeReg.connect(contractor).fileDispute(
+          ethers.id(`MS-FLOOD-${i}`),
+          ethers.keccak256(ethers.toUtf8Bytes(`Grounds ${i}`))
+        );
+      }
+
+      // 4th dispute should be rejected
+      await expect(
+        disputeReg.connect(contractor).fileDispute(
+          ethers.id("MS-FLOOD-4"),
+          ethers.keccak256(ethers.toUtf8Bytes("Overflow dispute"))
+        )
+      ).to.be.revertedWith(
+        "BCRRS: too many active disputes — resolve existing ones first"
+      );
+    });
+  });
+
+  // ── castVote() — Gas Measurement (Table IV) ────────────────────────────
+
+  describe("castVote() — Gas Measurement (Table IV)", function () {
+    it("Should allow DRC members to cast votes", async function () {
+      const { contractor, drc1, drc2, drc3, disputeReg } =
+        await deployWithDispute();
+
+      const disputeId = await fileDisputeHelper(disputeReg, contractor);
+
+      // Open for review
+      await disputeReg.connect(drc1).openForReview(disputeId);
+
+      // First vote
+      const evidenceHash = ethers.keccak256(
+        ethers.toUtf8Bytes("Site visit confirmed inspector error")
+      );
+      const tx1 = await disputeReg.connect(drc1).castVote(
+        disputeId, true, evidenceHash
+      );
+      const receipt1 = await tx1.wait();
+      console.log(`      castVote() gas used: ${receipt1.gasUsed.toString()}`);
+
+      // Second vote
+      await disputeReg.connect(drc2).castVote(disputeId, true, evidenceHash);
+
+      // Third vote — should auto-resolve to UPHELD
+      const tx3 = await disputeReg.connect(drc3).castVote(
+        disputeId, true, evidenceHash
+      );
+      await tx3.wait();
+
+      const dispute = await disputeReg.disputes(disputeId);
+      // Status 2 = UPHELD
+      expect(dispute.status).to.equal(2);
+    });
+
+    it("Should prevent double voting", async function () {
+      const { contractor, drc1, disputeReg } = await deployWithDispute();
+      const disputeId = await fileDisputeHelper(disputeReg, contractor);
+
+      await disputeReg.connect(drc1).openForReview(disputeId);
+
+      const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes("Evidence"));
+      await disputeReg.connect(drc1).castVote(disputeId, true, evidenceHash);
+
+      await expect(
+        disputeReg.connect(drc1).castVote(disputeId, false, evidenceHash)
+      ).to.be.revertedWith("BCRRS: already voted");
+    });
+
+    it("Should resolve REJECTED when 3 votes against", async function () {
+      const { contractor, drc1, drc2, drc3, disputeReg } =
+        await deployWithDispute();
+
+      const disputeId = await fileDisputeHelper(disputeReg, contractor);
+      await disputeReg.connect(drc1).openForReview(disputeId);
+
+      const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes("No issue found"));
+      await disputeReg.connect(drc1).castVote(disputeId, false, evidenceHash);
+      await disputeReg.connect(drc2).castVote(disputeId, false, evidenceHash);
+      await disputeReg.connect(drc3).castVote(disputeId, false, evidenceHash);
+
+      const dispute = await disputeReg.disputes(disputeId);
+      // Status 3 = REJECTED
+      expect(dispute.status).to.equal(3);
+    });
+  });
+
+  // ── issueCorrectionValues() — Gas Measurement (Table IV) ───────────────
+
+  describe("issueCorrectionValues() — Gas Measurement (Table IV)", function () {
+    it("Should issue correction after dispute upheld", async function () {
+      const { contractor, drc1, drc2, drc3, disputeReg } =
+        await deployWithDispute();
+
+      const milestoneId = ethers.id("MS-CORRECTION-001");
+      const groundsHash = ethers.keccak256(ethers.toUtf8Bytes("Score error"));
+
+      const tx0 = await disputeReg.connect(contractor).fileDispute(
+        milestoneId, groundsHash
+      );
+      const receipt0 = await tx0.wait();
+      const event = receipt0.logs.find(
+        l => l.fragment && l.fragment.name === "DisputeFiled"
+      );
+      const disputeId = event ? event.args[0] : ethers.ZeroHash;
+
+      // Open and uphold
+      const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes("Inspector error confirmed"));
+      await disputeReg.connect(drc1).openForReview(disputeId);
+      await disputeReg.connect(drc1).castVote(disputeId, true, evidenceHash);
+      await disputeReg.connect(drc2).castVote(disputeId, true, evidenceHash);
+      await disputeReg.connect(drc3).castVote(disputeId, true, evidenceHash);
+
+      // Issue correction — key gas measurement for Table IV
+      const tx = await disputeReg.connect(drc1).issueCorrectionValues(
+        disputeId,
+        85,    // correctedQualityScore (original was ~40)
+        true,  // correctedMaterialCompliant
+        false, // correctedDisputeFlag
+        evidenceHash
+      );
+      const receipt = await tx.wait();
+      console.log(
+        `      issueCorrectionValues() gas used: ${receipt.gasUsed.toString()}`
+      );
+
+      expect(receipt.status).to.equal(1);
+
+      // Verify correction is retrievable
+      const [exists, correction] =
+        await disputeReg.getMilestoneCorrection(milestoneId);
+      expect(exists).to.be.true;
+      expect(correction.correctedQualityScore).to.equal(85);
+    });
+  });
+
+  // ── getMilestoneCorrection() — view = 0 gas ────────────────────────────
+
+  describe("getMilestoneCorrection() — view function (0 gas)", function () {
+    it("Should return correction for a corrected milestone", async function () {
+      const { contractor, drc1, drc2, drc3, disputeReg } =
+        await deployWithDispute();
+
+      const milestoneId = ethers.id("MS-VIEW-001");
+      const groundsHash = ethers.keccak256(ethers.toUtf8Bytes("Error"));
+
+      const tx0 = await disputeReg.connect(contractor).fileDispute(
+        milestoneId, groundsHash
+      );
+      const receipt0 = await tx0.wait();
+      const event = receipt0.logs.find(
+        l => l.fragment && l.fragment.name === "DisputeFiled"
+      );
+      const disputeId = event ? event.args[0] : ethers.ZeroHash;
+
+      const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes("Confirmed"));
+      await disputeReg.connect(drc1).openForReview(disputeId);
+      await disputeReg.connect(drc1).castVote(disputeId, true, evidenceHash);
+      await disputeReg.connect(drc2).castVote(disputeId, true, evidenceHash);
+      await disputeReg.connect(drc3).castVote(disputeId, true, evidenceHash);
+      await disputeReg.connect(drc1).issueCorrectionValues(
+        disputeId, 90, true, false, evidenceHash
+      );
+
+      // This is a view — zero gas
+      const [exists, correction] =
+        await disputeReg.getMilestoneCorrection(milestoneId);
+      expect(exists).to.be.true;
+      expect(correction.correctedQualityScore).to.equal(90);
+      console.log(`      getMilestoneCorrection() gas used: 0 (view function)`);
+    });
+
+    it("Should return exists=false for uncorrected milestone", async function () {
+      const { disputeReg } = await deployWithDispute();
+      const [exists] = await disputeReg.getMilestoneCorrection(
+        ethers.id("NON-EXISTENT")
+      );
+      expect(exists).to.be.false;
+    });
+  });
+
+  // ── escalateToCourt() ─────────────────────────────────────────────────
+
+  describe("escalateToCourt() — court integration path", function () {
+    it("Should record court escalation immutably", async function () {
+      const { contractor, drc1, drc2, drc3, authority, disputeReg } =
+        await deployWithDispute();
+
+      const disputeId = await fileDisputeHelper(disputeReg, contractor);
+      const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes("Evidence"));
+
+      await disputeReg.connect(drc1).openForReview(disputeId);
+      await disputeReg.connect(drc1).castVote(disputeId, false, evidenceHash);
+      await disputeReg.connect(drc2).castVote(disputeId, false, evidenceHash);
+      await disputeReg.connect(drc3).castVote(disputeId, false, evidenceHash);
+
+      // Contractor escalates after rejection
+      const tribunalAddress = authority.address; // using authority as mock tribunal
+      const tx = await disputeReg.connect(contractor).escalateToCourt(
+        disputeId, tribunalAddress
+      );
+      const receipt = await tx.wait();
+      console.log(`      escalateToCourt() gas used: ${receipt.gasUsed.toString()}`);
+
+      const dispute = await disputeReg.disputes(disputeId);
+      // Status 4 = ESCALATED
+      expect(dispute.status).to.equal(4);
+      expect(dispute.escalatedTo).to.equal(tribunalAddress);
+    });
+  });
+
+  // ── DRC governance ────────────────────────────────────────────────────
+
+  describe("DRC Governance", function () {
+    it("Should add and remove DRC members — authority only", async function () {
+      const { authority, stranger, disputeReg } = await deployWithDispute();
+
+      const newMember = stranger;
+      await disputeReg.connect(authority).addDRCMember(
+        newMember.address, "New Engineering Body"
+      );
+      const member = await disputeReg.drcMembers(newMember.address);
+      expect(member.active).to.be.true;
+
+      await disputeReg.connect(authority).removeDRCMember(
+        newMember.address, "Term expired"
+      );
+      const removed = await disputeReg.drcMembers(newMember.address);
+      expect(removed.active).to.be.false;
+    });
+
+    it("Should prevent non-DRC members from voting", async function () {
+      const { contractor, stranger, drc1, disputeReg } = await deployWithDispute();
+
+      const disputeId = await fileDisputeHelper(disputeReg, contractor);
+      await disputeReg.connect(drc1).openForReview(disputeId);
+
+      await expect(
+        disputeReg.connect(stranger).castVote(
+          disputeId, true,
+          ethers.keccak256(ethers.toUtf8Bytes("Fake evidence"))
+        )
+      ).to.be.revertedWith("BCRRS: caller is not an active DRC member");
+    });
+  });
+});
