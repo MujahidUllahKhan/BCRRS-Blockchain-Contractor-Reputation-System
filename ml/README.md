@@ -1,28 +1,18 @@
-# BCRRS ML Ranking Engine
-
+BCRRS ML Ranking Engine
 Python implementation of the complete machine learning pipeline for:
-
 > **"A Blockchain-Based Dynamic Contractor Reputation and Ranking System with Machine Learning for Transparent Construction Procurement"**
 > Mujahid Ullah Khan Afridi — Department of Industrial Engineering, New Mexico State University
-
 ---
-
-## What This Does
-
+What This Does
 This script reads contractor performance data derived from BCRRS smart contracts and produces:
-
-1. **Complexity-weighted metrics** (SPI, DDS, MCR, FCI) per contractor
-2. **TOPSIS multi-criteria ranking** — ranked contractor list with scores
-3. **Random Forest risk flags** — underperformance probability per contractor
-4. **Sensitivity analysis** — Kendall τ stability across weight perturbations
-5. **Monte Carlo validation** — 500-trial robustness test
-
+Complexity-weighted metrics (SPI, DDS, MCR, FCI) per contractor
+TOPSIS multi-criteria ranking — ranked contractor list with scores
+Random Forest risk flags — underperformance probability per contractor
+Sensitivity analysis — Kendall τ stability across weight perturbations
+Monte Carlo validation — 500-trial robustness test
 ---
-
-## Data Flow
-
+Data Flow
 All inputs come from on-chain data. Nothing is self-reported.
-
 ```
 ContractorRegistry.sol          ProjectMilestone.sol        ReputationLedger.sol
        │                                │                           │
@@ -56,45 +46,32 @@ ContractorRegistry.sol          ProjectMilestone.sol        ReputationLedger.sol
                                         │
                                   Ranked list
 ```
-
 ---
-
-## Installation
-
-**Requirements:** Python 3.9+
-
+Installation
+Requirements: Python 3.9+
 ```bash
 pip install -r requirements.txt
 ```
-
 ---
-
-## Usage
-
-### Basic demo (8 contractors)
+Usage
+Basic demo (8 contractors)
 ```bash
 python bcrrs_ranking.py
 ```
-
-### Full CPEC case study (50 contractors)
+Full CPEC case study (50 contractors)
 ```bash
 python bcrrs_ranking.py --cpec
 ```
-
-### With sensitivity analysis (produces Table V of the paper)
+With sensitivity analysis (produces Table V of the paper)
 ```bash
 python bcrrs_ranking.py --cpec --sensitivity
 ```
-
-### Export results to CSV
+Export results to CSV
 ```bash
 python bcrrs_ranking.py --cpec --export results.csv
 ```
-
 ---
-
-## Sample Output
-
+Sample Output
 ```
 BCRRS ML Ranking Engine
 ======================================================================
@@ -133,83 +110,56 @@ Monte Carlo (500 random weight triples):
 
   Ranking stability verdict: STABLE (τ=0.8800)
 ```
-
 ---
-
-## Metrics Explained
-
-| Metric | Full Name | Formula | Source |
-|---|---|---|---|
-| SPI | Schedule Performance Index | `(onTime/total) × (1 − avgDelay/δmax)` | `ReputationLedger` |
-| DDS | Defect Density Score | `qualityScoreSum / totalMilestones` | `ReputationLedger` |
-| MCR | Material Compliance Rate | `compliantCount / totalMilestones` | `ReputationLedger` |
-| FCI | Financial Conduct Index | `1 − disputeCount / totalMilestones` | `ReputationLedger` |
-
+Metrics Explained
+Metric	Full Name	Formula	Source
+SPI	Schedule Performance Index	`(onTime/total) × (1 − avgDelay/δmax)`	`ReputationLedger`
+DDS	Defect Density Score	`qualityScoreSum / totalMilestones`	`ReputationLedger`
+MCR	Material Compliance Rate	`compliantCount / totalMilestones`	`ReputationLedger`
+FCI	Financial Conduct Index	`1 − disputeCount / totalMilestones`	`ReputationLedger`
 ---
-
-## Complexity Weight Parameters
-
-| Parameter | Default | Controls |
-|---|---|---|
-| `α` (alpha) | 0.50 | Weight on log(contract value) |
-| `β` (beta) | 0.30 | Weight on technical class (1–4) |
-| `γ` (gamma) | 0.20 | Weight on project duration |
-| `V_ref` | $1,000,000 | Reference contract value |
-
+Complexity Weight Parameters
+Parameter	Default	Controls
+`α` (alpha)	0.50	Weight on log(contract value)
+`β` (beta)	0.30	Weight on technical class (1–4)
+`γ` (gamma)	0.20	Weight on project duration
+`V_ref`	$1,000,000	Reference contract value
 These are expert-elicited baseline values validated by sensitivity analysis.
 See Section XI of the paper for full validation results.
-
 ---
-
-## TOPSIS Criteria Weights
-
-| Metric | Weight | Rationale |
-|---|---|---|
-| SPI | 0.30 | Schedule failure is the most publicly visible problem |
-| DDS | 0.25 | Quality is equally important to material compliance |
-| MCR | 0.25 | Material fraud is a primary CPEC fraud vector |
-| FCI | 0.20 | Financial conduct is a secondary signal |
-
+TOPSIS Criteria Weights
+Metric	Weight	Rationale
+SPI	0.30	Schedule failure is the most publicly visible problem
+DDS	0.25	Quality is equally important to material compliance
+MCR	0.25	Material fraud is a primary CPEC fraud vector
+FCI	0.20	Financial conduct is a secondary signal
 ---
-
-## Risk Flag Threshold
-
+Risk Flag Threshold
 A contractor is flagged for underperformance risk when:
-
 ```
 SPI < 0.70  AND  DDS < 65
 ```
-
 Both conditions must be true simultaneously. This is the Random Forest
 classifier's decision boundary, trained on 1,000 synthetic samples
 calibrated from CPEC audit distributions (cross-validated AUC: 1.000
 on simulation data).
-
 ---
-
-## DRC Corrections
-
+DRC Corrections
 If `DisputeRegistry.sol` has issued a correction for a milestone,
 the function `effective_milestone_values()` substitutes the corrected
 quality score and material compliance flag before computing metrics.
 The original on-chain values are never modified — this mirrors the
 immutability-preserving design of `DisputeRegistry.sol`.
-
 ---
-
-## File Structure
-
+File Structure
 ```
 ml/
 ├── bcrrs_ranking.py      — complete ML pipeline
 ├── requirements.txt      — Python dependencies
 └── README.md             — this file
 ```
-
 ---
-
-## Citation
-
+Citation
 ```bibtex
 @article{afridi2025bcrrs,
   title   = {A Blockchain-Based Dynamic Contractor Reputation and Ranking
@@ -220,9 +170,6 @@ ml/
   note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
 }
 ```
-
 ---
-
-## License
-
-MIT — see root [LICENSE](../LICENSE) for details.
+License
+MIT — see root LICENSE for details.
