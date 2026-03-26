@@ -141,13 +141,13 @@ ProjectMilestone	Sepolia	[update after deployment]
 Citation
 If you use this code in your research, please cite:
 ```bibtex
-@article{afridi2025bcrrs,
+@article{afridi2026bcrrs,
   title   = {A Blockchain-Based Dynamic Contractor Reputation and Ranking
              System with Machine Learning for Transparent Construction Procurement},
   author  = {Afridi, Mujahid Ullah Khan},
   journal = {[Journal name]},
-  year    = {2025},
-  note    = {Code: https://github.com/[yourusername]/BCRRS}
+  year    = {2026},
+  note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
 }
 ```
 ---
