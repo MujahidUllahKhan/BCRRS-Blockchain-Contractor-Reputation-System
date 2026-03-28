@@ -264,8 +264,8 @@ If you use this code in your research, please cite:
              System with Machine Learning for Transparent Construction
              Procurement},
   author  = {Afridi, Mujahid Ullah Khan and Sohn, Hansuk},
-  journal = {IEEE Access},
-  year    = {2025},
+  journal = {Not decided yet},
+  year    = {2026},
   note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
 }
 ```
