@@ -1,0 +1,35 @@
+# BCRRS Python ML Engine Requirements
+# Compatible with Python 3.8+
+
+# Core scientific computing
+numpy==1.24.3
+pandas==2.0.3
+scipy==1.11.2
+
+# Machine learning
+scikit-learn==1.3.0
+
+# Visualization
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Blockchain interaction
+web3==6.11.0
+eth-utils==2.3.1
+eth-abi==4.2.1
+
+# Statistical analysis
+statsmodels==0.14.0
+
+# Progress bars (optional, for simulations)
+tqdm==4.66.1
+
+# Jupyter notebook support (optional)
+jupyter==1.0.0
+ipykernel==6.25.1
+
+# Testing
+pytest==7.4.2
+
+# Random seed control
+python-dotenv==1.0.0
