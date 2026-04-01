@@ -264,7 +264,7 @@ If you use this code in your research, please cite:
 ```bibtex
 @article{afridi2025bcrrs,
   title   = {BCRRS: A Blockchain-Anchored Contractor Reputation System with ML Ranking, Anti-Nepotism Governance, and Cross-Border Intelligence for Construction Procurement},
-  author  = {Afridi, Mujahid Ullah Khan and Sohn, Hansuk},
+  author  = {Afridi, Mujahid Ullah Khan},
   journal = {},
   year    = {2026},
   note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
