@@ -1,4 +1,4 @@
-# BCRRS — Blockchain-based Contractor Reputation and Ranking System
+# BCRRS: A Blockchain-Anchored Contractor Reputation System with ML Ranking, Anti-Nepotism Governance, and Cross-Border Intelligence for Construction Procurement
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.20-blue)](https://soliditylang.org)
@@ -8,10 +8,13 @@
 
 Smart contract and ML implementation for the paper:
 
-> **"A Blockchain-Based Dynamic Contractor Reputation and Ranking System with Machine Learning for Transparent Construction Procurement"**  
+> **"BCRRS: A Blockchain-Anchored Contractor
+Reputation System
+with ML Ranking, Anti-Nepotism Governance,
+and Cross-Border Intelligence for Construction
+Procurement"**  
 > Mujahid Ullah Khan Afridi and Hansuk Sohn  
 > Department of Industrial Engineering, New Mexico State University  
-> *Target: IEEE Access*
 
 ---
 
@@ -260,11 +263,9 @@ If you use this code in your research, please cite:
 
 ```bibtex
 @article{afridi2025bcrrs,
-  title   = {A Blockchain-Based Dynamic Contractor Reputation and Ranking
-             System with Machine Learning for Transparent Construction
-             Procurement},
+  title   = {BCRRS: A Blockchain-Anchored Contractor Reputation System with ML Ranking, Anti-Nepotism Governance, and Cross-Border Intelligence for Construction Procurement},
   author  = {Afridi, Mujahid Ullah Khan and Sohn, Hansuk},
-  journal = {Not decided yet},
+  journal = {},
   year    = {2026},
   note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
 }
