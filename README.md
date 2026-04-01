@@ -13,7 +13,7 @@ Reputation System
 with ML Ranking, Anti-Nepotism Governance,
 and Cross-Border Intelligence for Construction
 Procurement"**  
-> Mujahid Ullah Khan Afridi and Hansuk Sohn  
+> Mujahid Ullah Khan Afridi  
 > Department of Industrial Engineering, New Mexico State University  
 
 ---
