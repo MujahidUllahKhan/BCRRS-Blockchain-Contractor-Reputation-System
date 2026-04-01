@@ -1,6 +1,6 @@
 BCRRS ML Ranking Engine
 Python implementation of the complete machine learning pipeline for:
-> **"A Blockchain-Based Dynamic Contractor Reputation and Ranking System with Machine Learning for Transparent Construction Procurement"**
+> **"BCRRS: A Blockchain-Anchored Contractor Reputation System with ML Ranking, Anti-Nepotism Governance, and Cross-Border Intelligence for Construction Procurement"**
 > Mujahid Ullah Khan Afridi — Department of Industrial Engineering, New Mexico State University
 ---
 What This Does
@@ -162,9 +162,8 @@ ml/
 Citation
 ```bibtex
 @article{afridi2025bcrrs,
-  title   = {A Blockchain-Based Dynamic Contractor Reputation and Ranking
-             System with Machine Learning for Transparent Construction Procurement},
-  author  = {Afridi, Mujahid Ullah Khan and Kwakye, Janet and Sohn, Hansuk},
+  title   = BCRRS: A Blockchain-Anchored Contractor Reputation System with ML Ranking, Anti-Nepotism Governance, and Cross-Border Intelligence for Construction Procurement},
+  author  = {Afridi, Mujahid Ullah Khan},
   journal = {[Journal name — update after acceptance]},
   year    = {2025},
   note    = {Code: https://github.com/MujahidUllahKhan/BCRRS-Blockchain-Contractor-Reputation-System}
